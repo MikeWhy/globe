@@ -240,25 +240,25 @@ public:
     }
 
     // clang-format off
-Triangle add_triangle( VertexT v1, VertexT v2, VertexT v3 )
-{   return { add( v1 ), add( v2 ), add( v3 ) };
-}
+    Triangle add_triangle( VertexT v1, VertexT v2, VertexT v3 )
+    {   return { add( v1 ), add( v2 ), add( v3 ) };
+    }
 
-const auto & operator[]( index_type index ) const
-{   return indices[index];  // WARNING: No bounds checking
-}
+    const auto & operator[]( index_type index ) const
+    {   return indices[index];  // WARNING: No bounds checking
+    }
 
-auto & get_indices() const
-{   return indices;
-}
+    auto & get_indices() const
+    {   return indices;
+    }
 
-auto & get_upd_indices()
-{   return indices;
-}
+    auto & get_upd_indices()
+    {   return indices;
+    }
 
-auto & get_vertices()
-{   return vertex_map;
-}
+    auto & get_vertices()
+    {   return vertex_map;
+    }
 
     // clang-format on
 
@@ -279,7 +279,21 @@ class GlobeMesh
     VertexList<SphericalCoord, glm::vec3> vertices;
     TriangleList triangles;
 
-    std::vector<std::pair<size_t, size_t>> subdivs;
+    struct SubdivLevel
+    {
+        size_t offset_begin;
+        size_t offset_end;
+        size_t vertex_end;
+
+        typedef std::pair<size_t, size_t> Bounds;
+        Bounds faces() const
+        { return {offset_begin, offset_end};
+        }
+        Bounds vertices() const
+        { return {0, vertex_end};
+        }
+    };
+    std::vector<SubdivLevel> subdivs;
 
 public:
     GlobeMesh() = default;
@@ -306,16 +320,17 @@ public:
         }
         if (sub >= subdivs.size())
         {
-            return slice(triangles, subdivs.back());
+            return slice(triangles, subdivs.back().faces());
         }
-        return slice(triangles, subdivs[sub]);
+        return slice(triangles, subdivs[sub].faces());
     }
 
     void mark_subdiv()
     {
-        auto first = !subdivs.empty() ? subdivs.back().second : 0;
-        subdivs.push_back({first, triangles.size()});
+        auto first = !subdivs.empty() ? subdivs.back().offset_end : 0;
+        subdivs.push_back({first, triangles.size(), vertices.get_indices().size()});
     }
+
     void make_globe()
     {
         // Make some triangles.
@@ -366,7 +381,7 @@ public:
         {
             return; // don't have anything to subdivide. make a globe first.
         }
-        for (int i = 0; i < count; ++i)
+        for (int i = (int)subdivs.size()-1; i < count; ++i)
         {
             //-- We would like to not shove things around
             // through a temproary triangle buffer, but the
@@ -387,15 +402,16 @@ public:
             // first subdivision.
             //----
             auto last_div = subdivs.back();
-            triangles.reserve(triangles.size() + (last_div.second - last_div.first) * 4);
+            triangles.reserve(triangles.size() + (last_div.offset_end - last_div.offset_begin) * 4);
+            
             void * unused = triangles.data();   // try to force WIN32 to actually reserve memory.
             //-- WARNING: See the WARNING above.
 #ifndef WIN32
-            auto old_triangles = slice(triangles, subdivs.back());
+            auto old_triangles = slice(triangles, subdivs.back().faces());
 #else
             //-- WIN32: copy the triangles we're expanding to a
             // temporary to workaround crashing iterators.
-            auto latest = slice(triangles, subdivs.back());
+            auto latest = slice(triangles, subdivs.back().faces());
             TriangleList old_triangles(latest.begin(), latest.end());
 #endif
             for (auto t : old_triangles)
@@ -433,8 +449,9 @@ public:
         std::cout << "Vertices: [" << indices.size()
                     << "], Faces: [" << triangles.size()
                     << "] in " << subdivs.size() << " subdivs:\n";
-        for (auto s : subdivs)
+        for (auto ss : subdivs)
         {
+            auto s = ss.faces();
             std::cout << std::setw(16) << (s.second - s.first)
                         << " [" << s.first << ", " << s.second << "]\n";
         }

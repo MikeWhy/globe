@@ -355,10 +355,19 @@ Each vertex is 24 bytes:
 ```
 `uv` is actually our latitude and longitude. We'll retain that on disk.
 
-Each face is also 24 byes, 3 `uint_32` indexes.
+Each face is also 12 byes, 3 `uint_32` indexes.
 
 $$ \tag{Vertices} 2.68 e 9 * 24 = 64.3 GB $$
-$$ \tag{Faces} 5.37 e 9 * 24 = 129 GB $$
-$$ \tag{Total} 193.2 GB $$
+$$ \tag{Faces} 5.37 e 9 * 12 = 64.3 GB $$
+$$ \tag{Total} 128.6 GB $$
 
-That's quite a bit more than device memory on my dGPU (or any currenet device). Subdiv 11 will consume just over 3 GB in device buffers. We can build out the data file to subdiv 12, for 12.5 GB on disk.Feature sizes are 
+That's quite a bit more than device memory on my dGPU (or any conceivable near future graphics device). Subdiv 11 will consume about 2 GB in device buffers. We can build out the data file to subdiv 12, for 12.5 GB on disk. Feature sizes are 3.27 and 1.63 km respectively.
+
+| SubD | Faces (cumulative) | Vertices (shared) | On disk | In memory | Feature Size km |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 9 | 83,886,000.00 | 62,914,608.00 | 146,800,608.00 | 125,829,168.00 | 13.07 |
+| 10 | 335,544,240.00 | 251,658,288.00 | 587,202,528.00 | 503,316,528.00 | 6.54 |
+| 11 | 1,342,177,200.00 | 1,006,633,008.00 | 2,348,810,208.00 | 2,013,265,968.00 | 3.27 |
+| 12 | 5,368,709,040.00 | 4,026,531,888.00 | 9,395,240,928.00 | 8,053,063,728.00 | 1.63 |
+| 13 | 21,474,836,400.00 | 16,106,127,408.00 | 37,580,963,808.00 | 32,212,254,768.00 | 0.82 |
+| 14 | 85,899,345,840.00 | 64,424,509,488.00 | 150,323,855,328.00 | 128,849,018,928.00 | 0.41 |
