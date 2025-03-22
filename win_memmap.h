@@ -3,8 +3,7 @@
 #include <windows.h>
 #include <iostream>
 
-namespace mhy
-{
+namespace mhy {
     //-- MemoryMappedFile is a read-only view of file content.
     // MappedBuffer is a writable file map.
     // An allocator class marries the mapped buffer to
