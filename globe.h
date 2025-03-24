@@ -347,26 +347,26 @@ public:
             auto mid = east2 - wedge;
             // clockwise vertex order
             // clang-format off
-    triangles.push_back(
-        vertices.add_triangle(
-            { pi_2, (east + west) * 0.5f },
-            { n_lat, east },
-            { n_lat, west } ) );
-    triangles.push_back(
-        vertices.add_triangle(
-            { n_lat, east },
-            { s_lat, mid },
-            { n_lat, west } ) );
-    triangles.push_back(
-        vertices.add_triangle(
-            { n_lat, east },
-            { s_lat, east2 },
-            { s_lat, mid } ) );
-    triangles.push_back(
-        vertices.add_triangle(
-            { s_lat, mid },
-            { s_lat, east2 },
-            { -pi_2, (mid + east2) * 0.5f } ) );
+            triangles.push_back(
+                vertices.add_triangle(
+                    { pi_2, (east + west) * 0.5f },
+                    { n_lat, east },
+                    { n_lat, west } ) );
+            triangles.push_back(
+                vertices.add_triangle(
+                    { n_lat, east },
+                    { s_lat, mid },
+                    { n_lat, west } ) );
+            triangles.push_back(
+                vertices.add_triangle(
+                    { n_lat, east },
+                    { s_lat, east2 },
+                    { s_lat, mid } ) );
+            triangles.push_back(
+                vertices.add_triangle(
+                    { s_lat, mid },
+                    { s_lat, east2 },
+                    { -pi_2, (mid + east2) * 0.5f } ) );
             // clang-format on
         }
         mark_subdiv();
@@ -384,7 +384,7 @@ public:
         for (int i = (int)subdivs.size()-1; i < count; ++i)
         {
             //-- We would like to not shove things around
-            // through a temproary triangle buffer, but the
+            // through a temporary triangle buffer, but the
             // triangles list iterators still get hosed
             // even with the added space reserved. This remains
             // a puzzle but we move on with the cost of an
