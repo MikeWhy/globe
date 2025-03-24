@@ -12,7 +12,6 @@
 #include <utility>
 
 #include <map>
-#include <vector>
 #include <array>
 
 #ifndef GLM_ENABLE_EXPERIMENTAL
@@ -25,6 +24,7 @@
 // #include <glm/gtx/polar_coordinates.hpp>
 
 #include "memmap.h"
+#include "mikey_tools.h"
 
 namespace Globe
 {
@@ -192,8 +192,8 @@ std::ostream &operator<<(std::ostream &os, const SphericalCoord &sc)
 }
 
 using index_type = uint32_t;
-using Triangle = std::array<index_type, 3>;
-using TriangleList = std::vector<Triangle>;
+using Triangle = glm::u32vec3;
+using TriangleList = mhy::ListT<Triangle>;
 
 template <class T>
 void print(const Slice<T> &triangles, bool details = false)
@@ -203,8 +203,7 @@ void print(const Slice<T> &triangles, bool details = false)
     {
         for (auto &t : triangles)
         {
-            std::cout << std::setw(8) << "{" << t[0] << ", " << t[1] << ", " << t[2] << "}"
-                        << std::endl;
+            std::cout << "        " << t << std::endl;
         }
     }
 }
@@ -217,7 +216,7 @@ public:
 
 private:
     std::map<VertexT, index_type> vertex_map;
-    std::vector<VertexT> indices;
+    mhy::ListT<VertexT> indices;
 
 public:
     VertexList() = default;
@@ -293,7 +292,7 @@ class GlobeMesh
         { return {0, vertex_end};
         }
     };
-    std::vector<SubdivLevel> subdivs;
+    mhy::ListT<SubdivLevel> subdivs;
 
 public:
     GlobeMesh() = default;
@@ -331,8 +330,13 @@ public:
         subdivs.push_back({first, triangles.size(), vertices.get_indices().size()});
     }
 
-    void make_globe()
+    template <typename U, typename V, typename W>
+    void make_globe(U r_subs, V r_faces, W r_verts)
     {
+        subdivs = r_subs;
+        triangles = r_faces;
+        get_upd_vertices() = r_verts;
+
         // Make some triangles.
 
         const float n_lat = atan(0.5f);
@@ -383,37 +387,7 @@ public:
         }
         for (int i = (int)subdivs.size()-1; i < count; ++i)
         {
-            //-- We would like to not shove things around
-            // through a temporary triangle buffer, but the
-            // triangles list iterators still get hosed
-            // even with the added space reserved. This remains
-            // a puzzle but we move on with the cost of an
-            // append_range(), which can be substantial
-            // at large subdivision counts.
-            //----
-            // WARNING: std::vector::reserve() can silently fail to
-            // allocate the requested space and revert to piecewise
-            // expansion. Because we also read existing triangles as
-            // we add new ones, the iterators we hold in the slice
-            // will be invalidated. On a 32GB system, reserve() failed
-            // after the 10th subdivision. That's the good reesult.
-            // On WIN32, reserve() still allows memory expansion, and
-            // subsequent iterator failure, almost immediately, on the
-            // first subdivision.
-            //----
-            auto last_div = subdivs.back();
-            triangles.reserve(triangles.size() + (last_div.offset_end - last_div.offset_begin) * 4);
-            
-            void * unused = triangles.data();   // try to force WIN32 to actually reserve memory.
-            //-- WARNING: See the WARNING above.
-#ifndef WIN32
             auto old_triangles = slice(triangles, subdivs.back().faces());
-#else
-            //-- WIN32: copy the triangles we're expanding to a
-            // temporary to workaround crashing iterators.
-            auto latest = slice(triangles, subdivs.back().faces());
-            TriangleList old_triangles(latest.begin(), latest.end());
-#endif
             for (auto t : old_triangles)
             {
                 auto &v0 = vertices[t[0]];
@@ -434,8 +408,6 @@ public:
                 triangles.push_back({i20, i12, t[2]});
                 triangles.push_back({i01, i12, i20});
             }
-            // triangles.append_range(triangles);
-            // triangles.insert(triangles.end(), new_triangles.begin(), new_triangles.end());
             mark_subdiv();
             std::cout << (i + 1) << ' ' << std::flush;
         }
