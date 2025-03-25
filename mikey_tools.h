@@ -112,6 +112,19 @@ class ListT
 
     ~ListT() {}
 
+    //-- Load from pre-initialized memory, such as from a data file.
+    // This differs from normal assigment by setting our `here`
+    // to the end() of the buf, indicating it is full, rather than the beginning,
+    // an empty() list.
+    template <class U>
+    ListT<T> & load_from( RangeT<U> u )
+    {
+        buf  = u;
+        here = buf.end();
+
+        return *this;
+    }
+
     template <class U>
     ListT<T> & operator=( RangeT<U> u )
     {

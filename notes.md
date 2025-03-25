@@ -480,3 +480,39 @@ Actual data size: 9403294576, data file size: 9403294552
 ```
 
 Furthermore, there may be problems between Linux and Win32-sourced data files. Linux g++ 14 on Ubuntu 24.04 reports max_align_t as 16 bytes, compared to 8 bytes above for Win32.
+
+### Hex dumps
+
+Dump a sample of the vertices. The console prints the starting offset of the vertex chunk, chunk type 3. Its data block starts immediately past. Below, the chunk header starts at offest 5243056 and is 24 bytes long. The vertex data block thus begins at 5243080. Each vertex is 24 bytes, all floats. The `od` command line below illustrates.
+
+The first vertex is the north pole. Latitude 90 ($\pi/2$), longitude 0. Cartesian xyz follows, [0, 1, 0]. Depth of the Arctic Ocean there is -4223 meters.
+
+Data looks complete and the quality good.
+
+The notation `File is nnnn bytes too big.` is expected. Vertex merging is inexact. We allow extra room to capture the errant few that escape. Here, the vertex data block itself was trimmed and its data_size adjusted in the chunk header. An EOF chunk header was appended to cap the valid data portion of the file. The file can be truncated by other means to not waste the 8k bytes that follow.
+
+```bash
+...
+Chunk Header: [5243056]
+    chunk_type   = 3
+    header_bytes = 24
+    data_stride  = 24
+    data_count   = 163844
+    data_size    = 3932256
+Actual data size: 9175336, data file size: 9183304
+   File is 7968 bytes too big.
+
+$ od -Ad -w24 -f -j5243080 -N4096 testdata/globe-mesh-7.dat |head
+5243080       1.5707964               0              -0               1   -4.371139e-08           -4233
+5243104       0.4636476      0.62831855       0.5257311       0.4472136       0.7236068            -190
+5243128       0.4636476     -0.62831855      -0.5257311       0.4472136       0.7236068           -4766
+5243152      -0.4636476               0               0      -0.4472136       0.8944272           -5722
+5243176      -0.4636476       1.2566371      0.85065085      -0.4472136      0.27639318           -3084
+5243200      -1.5707964      0.62831855   -2.569291e-08              -1  -3.5363257e-08             -25
+5243224       0.4636476       1.8849556       0.8506508       0.4472136     -0.27639323             839
+5243248      -0.4636476       2.5132742        0.525731      -0.4472136      -0.7236068             257
+5243272       0.4636476       3.1415927   -7.819331e-08       0.4472136      -0.8944272           -5460
+5243296      -0.4636476       3.7699113      -0.5257312      -0.4472136     -0.72360677           -3682
+```
+
+0x00000244684265d0 {vptr=0x0000024468730000 len=9183304 }

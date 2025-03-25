@@ -10,6 +10,7 @@
 #include <limits>
 #include <cstdint>
 #include <utility>
+#include <memory>
 
 #include <map>
 #include <array>
@@ -275,6 +276,9 @@ public:
 
 class GlobeMesh
 {
+    std::unique_ptr<mhy::MappedBuffer>      gen_file;   // mesh wwas generated into this file
+    std::unique_ptr<mhy::MemoryMappedFile>  load_file;  // pre-generated mesh was loaded from this.
+
     VertexList<SphericalCoord, glm::vec3> vertices;
     TriangleList                          triangles;
 
@@ -336,6 +340,70 @@ class GlobeMesh
         auto first = !subdivs.empty() ? subdivs.back().offset_end : 0;
         subdivs.push_back( { first, triangles.size(), vertices.get_indices().size() } );
     }
+
+    bool load_from_mesh( const char * fname )
+    {  // stubbed for now.
+        auto poo = std::make_unique<mhy::MemoryMappedFile>( fname );
+
+        auto & fheader = *poo->cast_to<globe_fileheader>(0);    // get file header at offset 0
+        if (fheader.id_word != 0x1234 ||
+            fheader.version_id > 0x100)
+        {
+            std::cout << "File '" << fname << "' is not compatible with this version of Globe.\n";
+            return false;
+        }
+
+        size_t i_offset = fheader.header_bytes + fheader.data_bytes;
+        auto pchunk = poo->cast_to<globe_chunk_header>(i_offset);
+        {   // load the subdivs headers
+            if (pchunk->chunk_type != eChunkSubdivInfo ||
+                pchunk->data_stride != sizeof(SubdivLevel))
+            {
+                std::cout << "Subdiv info struct size (" << sizeof(SubdivLevel) 
+                    << ") does not match its data_stride " << pchunk->data_stride << std::endl;
+                return false;
+            }
+        }
+        auto r_subds = mhy::range(poo->cast_to<SubdivLevel>(i_offset + pchunk->header_bytes), pchunk->data_count);
+
+        i_offset += pchunk->header_bytes + pchunk->data_size;
+        pchunk = poo->cast_to<globe_chunk_header>(i_offset);
+        {   // load the faces
+            if (pchunk->chunk_type != eChunkFaces ||
+                pchunk->data_stride != sizeof(Triangle))
+            {
+                std::cout << "Faces struct size (" << sizeof(Triangle) 
+                    << ") does not match its data_stride " << pchunk->data_stride << std::endl;
+                return false;
+            }
+        }
+        auto r_faces = mhy::range(poo->cast_to<Triangle>(i_offset + pchunk->header_bytes), pchunk->data_count);
+
+        i_offset += pchunk->header_bytes + pchunk->data_size;
+        pchunk = poo->cast_to<globe_chunk_header>(i_offset);
+        {   // load the faces
+            if (pchunk->chunk_type != eChunkVerts ||
+                pchunk->data_stride != sizeof(SphericalCoord))
+            {
+                std::cout << "Verts struct size (" << sizeof(SphericalCoord) 
+                    << ") does not match its data_stride " << pchunk->data_stride << std::endl;
+                return false;
+            }
+        }
+        auto r_verts = mhy::range(poo->cast_to<SphericalCoord>(i_offset + pchunk->header_bytes), pchunk->data_count);
+
+        subdivs.load_from(r_subds);
+        triangles.load_from(r_faces);
+        get_upd_vertices().load_from(r_verts);
+
+        load_file.swap(poo);    // assign ownership to `this`
+
+        return true;
+    }
+
+    //---- This is all you need to draw a globe. The remainder
+    // generates the mesh and writes the data file loaded above.
+    //--------------------------------------------------
 
     template <typename U, typename V, typename W>
     void make_globe( U r_subs, V r_faces, W r_verts )
@@ -633,11 +701,6 @@ class GlobeMesh
         return above;
     }
 
-    bool load_from_mesh( const char * fname )
-    {  // stubbed for now.
-        return false;
-    }
-
   public:
     struct globe_fileheader
     {
@@ -670,12 +733,6 @@ class GlobeMesh
         return mhy::RangeT<globe_fileheader>( phdr, 1 );
     }
 
-    template <class T, class U>
-    auto next_chunk( mhy::RangeT<U> & prev_chunk, size_t n = 1 )
-    {
-        return mhy::RangeT<T>( reinterpret_cast<T *>( prev_chunk.end() ), n );
-    }
-
     enum EChunkType : uint16_t
     {
         eChunkInvalid = 0,
@@ -696,6 +753,12 @@ class GlobeMesh
             "    data_size    = " << chunk.data_size << "\n"
             ;
         return os;
+    }
+
+    template <class T, class U>
+    auto next_chunk( mhy::RangeT<U> & prev_chunk, size_t n = 1 )
+    {
+        return mhy::RangeT<T>( reinterpret_cast<T *>( prev_chunk.end() ), n );
     }
 
     template <class T, class U>
@@ -842,7 +905,9 @@ class GlobeMesh
         std::cout << "Allocating " << flen << " bytes for " << nfaces << " faces and " << nverts << " vertices.\n";
 
         //--
-        mhy::MappedBuffer mbuf( fname, flen );
+        auto poo = std::make_unique<mhy::MappedBuffer>( fname, flen );
+        gen_file.swap(poo);
+        auto & mbuf = *gen_file;
         if ( !mbuf )
         {
             std::cout << "Error creating globe data file '" << fname << "'.\n";
@@ -862,7 +927,7 @@ class GlobeMesh
             // the file chunk headers.
             update_vertex_counts( mbuf );
 
-            // globe.load_from_terrain( fterrain );
+            load_from_terrain( fterrain );
         }
         catch ( const std::exception & ex )
         {
@@ -871,6 +936,7 @@ class GlobeMesh
 
         return true;
     }
+
 };
 
 }  // namespace Globe
