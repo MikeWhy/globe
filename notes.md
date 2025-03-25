@@ -355,10 +355,164 @@ Each vertex is 24 bytes:
 ```
 `uv` is actually our latitude and longitude. We'll retain that on disk.
 
-Each face is also 24 byes, 3 `uint_32` indexes.
+Each face is also 12 byes, 3 `uint_32` indexes.
 
 $$ \tag{Vertices} 2.68 e 9 * 24 = 64.3 GB $$
-$$ \tag{Faces} 5.37 e 9 * 24 = 129 GB $$
-$$ \tag{Total} 193.2 GB $$
+$$ \tag{Faces} 5.37 e 9 * 12 = 64.3 GB $$
+$$ \tag{Total} 128.6 GB $$
 
-That's quite a bit more than device memory on my dGPU (or any currenet device). Subdiv 11 will consume just over 3 GB in device buffers. We can build out the data file to subdiv 12, for 12.5 GB on disk.Feature sizes are 
+That's quite a bit more than device memory on my dGPU (or any conceivable near future graphics device). Subdiv 11 will consume about 2 GB in device buffers. We can build out the data file to subdiv 12, for 12.5 GB on disk. Feature sizes are 3.27 and 1.63 km respectively.
+
+| SubD | Faces (cumulative) | Vertices (shared) | On disk | In memory | Feature Size km |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 9 | 83,886,000.00 | 62,914,608.00 | 146,800,608.00 | 125,829,168.00 | 13.07 |
+| 10 | 335,544,240.00 | 251,658,288.00 | 587,202,528.00 | 503,316,528.00 | 6.54 |
+| 11 | 1,342,177,200.00 | 1,006,633,008.00 | 2,348,810,208.00 | 2,013,265,968.00 | 3.27 |
+| 12 | 5,368,709,040.00 | 4,026,531,888.00 | 9,395,240,928.00 | 8,053,063,728.00 | 1.63 |
+| 13 | 21,474,836,400.00 | 16,106,127,408.00 | 37,580,963,808.00 | 32,212,254,768.00 | 0.82 |
+| 14 | 85,899,345,840.00 | 64,424,509,488.00 | 150,323,855,328.00 | 128,849,018,928.00 | 0.41 |
+
+
+
+
+```text
+$ build/Release/make-globe.exe testdata/globe-mesh-12.dat elev.bin.npy
+std::max_align_t: 8
+Generating Globe with 12 subdivisions to file testdata/globe-mesh-12.dat.
+       1: +80 = 100
+       2: +320 = 420
+       3: +1280 = 1700
+       4: +5120 = 6820
+       5: +20480 = 27300
+       6: +81920 = 109220
+       7: +327680 = 436900
+       8: +1310720 = 1747620
+       9: +5242880 = 6990500
+      10: +20971520 = 27962020
+      11: +83886080 = 111848100
+      12: +335544320 = 447392420
+Allocating 9403294552 bytes for 447392420 faces and 168107714 vertices.
+Vertices: [13], Faces: [20] in 1 subdivs:
+              20 [0, 20]
+       0: [[    1.571,    0.000], [-0, 1, -4.37114e-08]]
+       1: [[    0.464,    0.628], [0.525731, 0.447214, 0.723607]]
+       2: [[    0.464,   -0.628], [-0.525731, 0.447214, 0.723607]]
+       3: [[   -0.464,    0.000], [0, -0.447214, 0.894427]]
+       4: [[   -0.464,    1.257], [0.850651, -0.447214, 0.276393]]
+       5: [[   -1.571,    0.628], [-2.56929e-08, -1, -3.53633e-08]]
+       6: [[    0.464,    1.885], [0.850651, 0.447214, -0.276393]]
+       7: [[   -0.464,    2.513], [0.525731, -0.447214, -0.723607]]
+       8: [[    0.464,    3.142], [-7.81933e-08, 0.447214, -0.894427]]
+       9: [[   -0.464,    3.770], [-0.525731, -0.447214, -0.723607]]
+      10: [[    0.464,    4.398], [-0.850651, 0.447214, -0.276393]]
+      11: [[   -0.464,    5.027], [-0.850651, -0.447214, 0.276393]]
+      12: [[   -0.464,    5.027], [-0.850651, -0.447214, 0.276393]]
+Triangles: [20]
+        [        0,        1,        2]
+        [        1,        3,        2]
+        [        1,        4,        3]
+        [        3,        4,        5]
+        [        0,        6,        1]
+        [        6,        4,        1]
+        [        6,        7,        4]
+        [        4,        7,        5]
+        [        0,        8,        6]
+        [        8,        7,        6]
+        [        8,        9,        7]
+        [        7,        9,        5]
+        [        0,       10,        8]
+        [       10,        9,        8]
+        [       10,       11,        9]
+        [        9,       11,        5]
+        [        0,        2,       10]
+        [        2,       12,       10]
+        [        2,        3,       12]
+        [       12,        3,        5]
+1 2 3 4 5 6 7 8 9 10 11 12 Vertices: [167797023], Faces: [447392420] in 13 subdivs:
+              20 [0, 20]
+              80 [20, 100]
+             320 [100, 420]
+            1280 [420, 1700]
+            5120 [1700, 6820]
+           20480 [6820, 27300]
+           81920 [27300, 109220]
+          327680 [109220, 436900]
+         1310720 [436900, 1747620]
+         5242880 [1747620, 6990500]
+        20971520 [6990500, 27962020]
+        83886080 [27962020, 111848100]
+       335544320 [111848100, 447392420]
+Triangles: [335544320]
+..................................
+```
+
+There were actually 167797023 (167.8 million) vertices. We allocated room for 168107714, or 310691 too many. (7456584, 7.46 MB, too big.)
+
+```text
+$ build/Release/make-globe.exe testdata/globe-mesh-12.dat 
+std::max_align_t: 8
+File header:
+    id_word      4660
+    header_bytes 16
+    version_id   256
+    data_bytes   0
+    padding      0
+Chunk Header: [16]
+    chunk_type   = 1
+    header_bytes = 24
+    data_stride  = 24
+    data_count   = 13
+    data_size    = 312
+Chunk Header: [352]
+    chunk_type   = 2
+    header_bytes = 24
+    data_stride  = 12
+    data_count   = 447392420
+    data_size    = 5368709040
+Chunk Header: [5368709416]
+    chunk_type   = 3
+    header_bytes = 24
+    data_stride  = 24
+    data_count   = 168107714
+    data_size    = 4034585136
+Actual data size: 9403294576, data file size: 9403294552
+   File is -24 bytes too big.
+```
+
+Furthermore, there may be problems between Linux and Win32-sourced data files. Linux g++ 14 on Ubuntu 24.04 reports max_align_t as 16 bytes, compared to 8 bytes above for Win32.
+
+### Hex dumps
+
+Dump a sample of the vertices. The console prints the starting offset of the vertex chunk, chunk type 3. Its data block starts immediately past. Below, the chunk header starts at offest 5243056 and is 24 bytes long. The vertex data block thus begins at 5243080. Each vertex is 24 bytes, all floats. The `od` command line below illustrates.
+
+The first vertex is the north pole. Latitude 90 ($\pi/2$), longitude 0. Cartesian xyz follows, [0, 1, 0]. Depth of the Arctic Ocean there is -4223 meters.
+
+Data looks complete and the quality good.
+
+The notation `File is nnnn bytes too big.` is expected. Vertex merging is inexact. We allow extra room to capture the errant few that escape. Here, the vertex data block itself was trimmed and its data_size adjusted in the chunk header. An EOF chunk header was appended to cap the valid data portion of the file. The file can be truncated by other means to not waste the 8k bytes that follow.
+
+```bash
+...
+Chunk Header: [5243056]
+    chunk_type   = 3
+    header_bytes = 24
+    data_stride  = 24
+    data_count   = 163844
+    data_size    = 3932256
+Actual data size: 9175336, data file size: 9183304
+   File is 7968 bytes too big.
+
+$ od -Ad -w24 -f -j5243080 -N4096 testdata/globe-mesh-7.dat |head
+5243080       1.5707964               0              -0               1   -4.371139e-08           -4233
+5243104       0.4636476      0.62831855       0.5257311       0.4472136       0.7236068            -190
+5243128       0.4636476     -0.62831855      -0.5257311       0.4472136       0.7236068           -4766
+5243152      -0.4636476               0               0      -0.4472136       0.8944272           -5722
+5243176      -0.4636476       1.2566371      0.85065085      -0.4472136      0.27639318           -3084
+5243200      -1.5707964      0.62831855   -2.569291e-08              -1  -3.5363257e-08             -25
+5243224       0.4636476       1.8849556       0.8506508       0.4472136     -0.27639323             839
+5243248      -0.4636476       2.5132742        0.525731      -0.4472136      -0.7236068             257
+5243272       0.4636476       3.1415927   -7.819331e-08       0.4472136      -0.8944272           -5460
+5243296      -0.4636476       3.7699113      -0.5257312      -0.4472136     -0.72360677           -3682
+```
+
+0x00000244684265d0 {vptr=0x0000024468730000 len=9183304 }
