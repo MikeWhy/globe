@@ -471,9 +471,10 @@ class GlobeMesh
 
             if ( ( i < 50 ) || ( 0 == i % 1000 ) )
             {
-                std::cout << std::setw( 8 ) << i << ": "
-                          << "xy" << v.uv << " uv" << uv << " index[" << lat << ", " << lon << "] -> " << elev
-                          << "\n";
+                std::cout << '.' << std::flush;
+                // std::cout << std::setw( 8 ) << i << ": "
+                //           << "xy" << v.uv << " uv" << uv << " index[" << lat << ", " << lon << "] -> " << elev
+                //           << "\n";
             }
             ++i;
         }
@@ -637,7 +638,7 @@ class GlobeMesh
         return false;
     }
 
-  private:
+  public:
     struct globe_fileheader
     {
         uint16_t id_word      = 0x1234;
@@ -656,6 +657,7 @@ class GlobeMesh
         uint64_t data_size    = 0;
     };
 
+  private:
     auto write_file_header( mhy::MappedBuffer & mbuf )
     {
         static const globe_fileheader header = {
@@ -684,6 +686,17 @@ class GlobeMesh
         //-----
         eChunkEOF = 0xffff
     };
+    std::ostream & print(std::ostream & os, const globe_chunk_header & chunk)
+    {
+        os << "Chunk Header: \n"
+            "    chunk_type   = " << chunk.chunk_type << "\n"
+            "    header_bytes = " << chunk.header_bytes << "\n"
+            "    data_stride  = " << chunk.data_stride << "\n"
+            "    data_count   = " << chunk.data_count << "\n"
+            "    data_size    = " << chunk.data_size << "\n"
+            ;
+        return os;
+    }
 
     template <class T, class U>
     auto allocate_data_chunk( mhy::RangeT<U> prev_chunk, EChunkType etype, size_t count )
@@ -702,7 +715,96 @@ class GlobeMesh
     {
         return allocate_data_chunk<char>( prev_chunk, eChunkEOF, 0 );
     }
-public:
+
+    void update_vertex_counts( mhy::MappedBuffer & mbuf )
+    {
+        auto const verts_count = get_vertices().size();
+        auto const faces_count = triangles.size();
+        auto const subds_count = subdiv_count();
+
+        //-- get file header
+        auto   phdr    = mbuf.cast_to<globe_fileheader>( 0 );
+        auto   chunk   = mbuf.cast_to<globe_chunk_header>();
+        size_t iOffset = phdr->header_bytes;
+
+        auto get_next_chunk = [&mbuf]( size_t offset )  //
+        {                                               //
+            return mbuf.cast_to<globe_chunk_header>( offset );
+        };
+
+        chunk              = get_next_chunk( iOffset );
+        print(std::cout << "Subdivs: ", *chunk);
+        auto eType         = chunk->chunk_type;
+        bool bValidHeaders = true;
+        if ( eChunkSubdivInfo != eType )
+        {
+            std::cout << "First chunk header is of unexpected type [" << eType
+                      << "]. Expecing [1] eChunkSubdivInfo.\n";
+            bValidHeaders = false;
+        }
+        else
+        {
+            std::cout << "Subdivs count was " << chunk->data_count << ". " "Expecting " << subds_count << std::endl;
+            chunk->data_count = subds_count;
+        }
+        iOffset += chunk->header_bytes + chunk->data_size;
+        chunk = get_next_chunk( iOffset );
+        print(std::cout << "Faces: ", *chunk);
+        eType = chunk->chunk_type;
+        if ( eChunkFaces != eType )
+        {
+            std::cout << "Second chunk header is of unexpected type [" << eType << "]. Expecing [2] eChunkFaces.\n";
+            bValidHeaders = false;
+        }
+        else
+        {
+            std::cout << "Faces count was " << chunk->data_count << ". " "Expecting " << faces_count << std::endl;
+            chunk->data_count = faces_count;
+        }
+        iOffset += chunk->header_bytes + chunk->data_size;
+        chunk = get_next_chunk( iOffset );
+        print(std::cout << "Verts: ", *chunk);
+        eType = chunk->chunk_type;
+        if ( eChunkVerts != eType )
+        {
+            std::cout << "Third chunk header is of unexpected type [" << eType << "]. Expecing [3] eChunkVerts.\n";
+            bValidHeaders = false;
+        }
+        else
+        {
+            auto actual_size = chunk->data_count * chunk->data_stride;
+            std::cout << "Verts count was " << chunk->data_count << ". " "Expecting " << verts_count
+                      << "\n" "   Data stride is " << chunk->data_stride << ". " " Expecting " << sizeof( SphericalCoord )
+                      << ".\n" "   Actual verts data size is " << actual_size << " bytes, " " allocated "
+                      << chunk->data_size << ".\n";
+
+            chunk->data_count = verts_count;
+            bValidHeaders     = !( actual_size < chunk->data_size );
+        }
+
+        if ( !bValidHeaders )
+        {
+            std::cout << "***** Chunk Headers are invalid. Not updating EOF chunk.\n";
+            return;
+        }
+        //-- Fix up verts data size. A mismatch is expected. We allocated extra
+        // because vertex count calcs are subject to inexact vertex merging.
+        chunk->data_size = chunk->data_count * chunk->data_stride;
+        iOffset += chunk->header_bytes + chunk->data_size;
+
+        auto eofChunk = mbuf.cast_to<globe_chunk_header>( iOffset );
+        *eofChunk     = {
+                .chunk_type   = eChunkEOF,
+                .header_bytes = sizeof( globe_chunk_header ),
+                .data_stride  = 0,
+                .data_count   = 0,
+                .data_size    = 0,
+        };
+        iOffset += eofChunk->header_bytes;
+        std::cout << "++++ You may safely truncate this data file to " << iOffset << ".\n";
+    }
+
+  public:
     bool generate( const char * fname, const char * fterrain, unsigned nsubdivs )
     {
         std::cout << "Generating Globe with " << nsubdivs << " subdivisions to file " << fname << ".\n";
@@ -754,10 +856,13 @@ public:
             auto pFaces   = allocate_data_chunk<Triangle>( pSubdivs, eChunkFaces, nfaces );
             auto pVerts   = allocate_data_chunk<SphericalCoord>( pFaces, eChunkVerts, nverts );
 
-            Globe::GlobeMesh globe;
-            globe.make_globe( pSubdivs, pFaces, pVerts );
-            globe.subdivide( nsubdivs );
-            globe.load_from_terrain( fterrain );
+            make_globe( pSubdivs, pFaces, pVerts );
+            subdivide( nsubdivs );
+            //-- all done generating. Update counts in
+            // the file chunk headers.
+            update_vertex_counts( mbuf );
+
+            // globe.load_from_terrain( fterrain );
         }
         catch ( const std::exception & ex )
         {
@@ -766,7 +871,6 @@ public:
 
         return true;
     }
-
 };
 
 }  // namespace Globe
