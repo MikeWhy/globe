@@ -310,7 +310,7 @@ class GlobeMesh
 
     auto get_vertices( size_t sub = UINT_MAX ) const
     {
-        auto verts = vertices.get_indices();
+        auto & verts = vertices.get_indices();
         if ( subdivs.empty() )
         {
             return slice( verts, 0, 0 );
