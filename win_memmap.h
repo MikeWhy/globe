@@ -151,12 +151,14 @@ namespace mhy {
                                        0);                    // hTemplateFile
             if (hFile == INVALID_HANDLE_VALUE)
             {
+                DWORD err = GetLastError();
                 return;
             }
 
             LARGE_INTEGER liFileSize;
             if (!GetFileSizeEx(hFile, &liFileSize) || liFileSize.QuadPart == 0)
             {
+                DWORD err = GetLastError();
                 CloseHandle(hFile);
                 return;
             }
@@ -170,6 +172,7 @@ namespace mhy {
                                             NULL);         // Name
             if (hMap == 0)
             {
+                DWORD err = GetLastError();
                 CloseHandle(hFile);
                 return;
             }
@@ -180,6 +183,7 @@ namespace mhy {
                                  0,             // dwFileOffsetLow
                                  0);            // dwNumberOfBytesToMap, entire file.
 
+            DWORD err = GetLastError();
             CloseHandle(hMap);
             CloseHandle(hFile);
         }

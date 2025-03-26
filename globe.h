@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <utility>
 #include <memory>
+#include <ranges>
 
 #include <map>
 #include <array>
@@ -307,9 +308,18 @@ class GlobeMesh
     GlobeMesh()  = default;
     ~GlobeMesh() = default;
 
-    auto & get_vertices() const
+    auto get_vertices( size_t sub = UINT_MAX ) const
     {
-        return vertices.get_indices();
+        auto & verts = vertices.get_indices();
+        if ( subdivs.empty() )
+        {
+            return slice( verts, 0, 0 );
+        }
+        if ( sub >= subdivs.size() )
+        {
+            return slice( verts, subdivs.back().vertices() );
+        }
+        return slice( verts, subdivs[sub].vertices() );
     }
 
     auto & get_upd_vertices()
@@ -578,7 +588,7 @@ class GlobeMesh
             std::cout << "Error writing terrain elevations file: " << fname << std::endl;
             return false;
         }
-        auto &     verts = get_vertices();
+        auto       verts = get_vertices();
         const auto vsize = verts.size();
 
         using ElevList = std::vector<float>;

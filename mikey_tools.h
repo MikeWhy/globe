@@ -77,6 +77,11 @@ class RangeT
     {
         return last - first;
     }
+
+    constexpr void* data() const
+    {
+        return reinterpret_cast<void*>(first);
+    }
 };
 
 template <typename T>
@@ -165,6 +170,10 @@ class ListT
         return end() - here;
     }
 
+    constexpr void * data() const
+    {
+        return buf.data();
+    }
     //-----
     template <typename... Vars>
     void push_back( Vars... args )
