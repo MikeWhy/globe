@@ -515,4 +515,106 @@ $ od -Ad -w24 -f -j5243080 -N4096 testdata/globe-mesh-7.dat |head
 5243296      -0.4636476       3.7699113      -0.5257312      -0.4472136     -0.72360677           -3682
 ```
 
-0x00000244684265d0 {vptr=0x0000024468730000 len=9183304 }
+```text
+$ build/Release/make-globe.exe testdata/patch-mesh-14.dat ./elev.bin.npy 12
+std::max_align_t: 8
+Generating Globe with 12 subdivisions to file testdata/patch-mesh-14.dat.
+       1: +24 = 30
+       2: +96 = 126
+       3: +384 = 510
+       4: +1536 = 2046
+       5: +6144 = 8190
+       6: +24576 = 32766
+       7: +98304 = 131070
+       8: +393216 = 524286
+       9: +1572864 = 2097150
+      10: +6291456 = 8388606
+      11: +25165824 = 33554430
+      12: +100663296 = 134217726
+Allocating 2820988792 bytes for 134217726 faces and 50432321 vertices.
+Vertices: [7], Faces: [6] in 1 subdivs:
+               6 [0, 6]
+       0: [[    0.755,   -1.571], [-0.727982, 0.685596, -3.18211e-08]]
+       1: [[    0.202,   -1.571], [-0.979698, 0.20048, -4.2824e-08]]
+       2: [[    0.247,   -2.291], [-0.729068, 0.244252, -0.639375]]
+       3: [[   -0.426,   -2.199], [-0.736759, -0.413104, -0.535287]]
+       4: [[   -0.352,   -1.571], [-0.938779, -0.344519, -4.10354e-08]]
+       5: [[   -0.426,   -0.942], [-0.736759, -0.413104, 0.535287]]
+       6: [[    0.247,   -0.851], [-0.729068, 0.244252, 0.639375]]
+Triangles: [6]
+        [        0,        1,        2]
+        [        1,        3,        2]
+        [        1,        4,        3]
+        [        1,        5,        4]
+        [        1,        6,        5]
+        [        1,        0,        6]
+1 2 3 4 5 6 7 8 9 10 11 12
+Vertices: [50349367], Faces: [134217726] in 13 subdivs:
+               6 [0, 6]
+              24 [6, 30]
+              96 [30, 126]
+             384 [126, 510]
+            1536 [510, 2046]
+            6144 [2046, 8190]
+           24576 [8190, 32766]
+           98304 [32766, 131070]
+          393216 [131070, 524286]
+         1572864 [524286, 2097150]
+         6291456 [2097150, 8388606]
+        25165824 [8388606, 33554430]
+       100663296 [33554430, 134217726]
+Triangles: [100663296]
+Subdivs: Chunk Header:
+    chunk_type   = 1
+    header_bytes = 24
+    data_stride  = 24
+    data_count   = 13
+    data_size    = 312
+Subdivs count was 13. Expecting 13
+Faces: Chunk Header:
+    chunk_type   = 2
+    header_bytes = 24
+    data_stride  = 12
+    data_count   = 134217726
+    data_size    = 1610612712
+Faces count was 134217726. Expecting 134217726
+Verts: Chunk Header:
+    chunk_type   = 3
+    header_bytes = 24
+    data_stride  = 24
+    data_count   = 50432321
+    data_size    = 1210375704
+Verts count was 50432321. Expecting 50349367
+   Data stride is 24.  Expecting 24.
+   Actual verts data size is 1210375704 bytes,  allocated 1210375704.
+++++ You may safely truncate this data file to 2818997944.
+....................................
+File header:
+    id_word      4660
+    header_bytes 16
+    version_id   256
+    data_bytes   0
+    padding      0
+Chunk Header: [16]
+    chunk_type   = 1
+    header_bytes = 24
+    data_stride  = 24
+    data_count   = 13
+    data_size    = 312
+Chunk Header: [352]
+    chunk_type   = 2
+    header_bytes = 24
+    data_stride  = 12
+    data_count   = 134217726
+    data_size    = 1610612712
+Chunk Header: [1610613088]
+    chunk_type   = 3
+    header_bytes = 24
+    data_stride  = 24
+    data_count   = 50349367
+    data_size    = 1208384808
+Actual data size: 2818997920, data file size: 2820988792
+   File is 1990872 bytes too big.
+Loaded a globe with 13 subdivisions, 100663296 faces, and 50349367 vertices.
+
+```
