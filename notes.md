@@ -93,6 +93,8 @@ Likewise for verts.hex. Vertices are XYZ triplets of `double`. The aligned verte
 
 The icosphere starts with 20 faces and 12 vertices. Each subdivision splits each edge in half. Thus, each triangular face subdivides to 4 faces and adds 3 vertices. The new vertices are shared with adjacent neighboring faces. So, each face is charged half a vertex for each of the three added, for 1.5 vertices per existing face on each subdivision.
 
+> For subdivision levels beyond the initial, base level, the total count of vertices at that subd level is half the face count for that level. Each vertex is shared across **6** faces. For 3 vertices per triangular face, $ 3 * \dfrac{1}{6} = 1/2 $. I'm uncertain why this doesn't hold true for the base level, which has 12 vertices, not the theoretical half of 20. Likely, this has to do with triangle fans of 5 faces at the poles. The pole vertices will continue to host a fan of 5 even after multiple subdivisions. Think of these as separate, though integrated, "caps" at the top and bottom of the world.
+
 |SubD Level | Faces | Add vertices | Vertex count |
 |---: | ---: | ---: | ---: |
 |0 | 20 | | 12 |
@@ -503,16 +505,83 @@ Actual data size: 9175336, data file size: 9183304
    File is 7968 bytes too big.
 
 $ od -Ad -w24 -f -j5243080 -N4096 testdata/globe-mesh-7.dat |head
-5243080       1.5707964               0              -0               1   -4.371139e-08           -4233
-5243104       0.4636476      0.62831855       0.5257311       0.4472136       0.7236068            -190
-5243128       0.4636476     -0.62831855      -0.5257311       0.4472136       0.7236068           -4766
-5243152      -0.4636476               0               0      -0.4472136       0.8944272           -5722
-5243176      -0.4636476       1.2566371      0.85065085      -0.4472136      0.27639318           -3084
-5243200      -1.5707964      0.62831855   -2.569291e-08              -1  -3.5363257e-08             -25
-5243224       0.4636476       1.8849556       0.8506508       0.4472136     -0.27639323             839
-5243248      -0.4636476       2.5132742        0.525731      -0.4472136      -0.7236068             257
-5243272       0.4636476       3.1415927   -7.819331e-08       0.4472136      -0.8944272           -5460
-5243296      -0.4636476       3.7699113      -0.5257312      -0.4472136     -0.72360677           -3682
+5243080  1.5707964            0              -0               1   -4.371139e-08  G   -4233
+5243104  0.4636476   0.62831855       0.5257311       0.4472136       0.7236068      -190
+5243128  0.4636476  -0.62831855      -0.5257311       0.4472136       0.7236068     -4766
+5243152 -0.4636476            0               0      -0.4472136       0.8944272     -5722
+5243176 -0.4636476    1.2566371      0.85065085      -0.4472136      0.27639318     -3084
+5243200 -1.5707964   0.62831855   -2.569291e-08              -1  -3.5363257e-08       -25
+5243224  0.4636476    1.8849556       0.8506508       0.4472136     -0.27639323       839
+5243248 -0.4636476    2.5132742        0.525731      -0.4472136      -0.7236068       257
+5243272  0.4636476    3.1415927   -7.819331e-08       0.4472136      -0.8944272     -5460
+5243296 -0.4636476    3.7699113      -0.5257312      -0.4472136     -0.72360677     -3682
 ```
 
-0x00000244684265d0 {vptr=0x0000024468730000 len=9183304 }
+## A conversation with Google search:
+
+Query:
+
+> A ring of 6 equal size equilateral triangles on the surface of a unit sphere encircle a common point on the surface of that sphere. What is the length of each side of those triangles, in radians?
+
+------------------
+
+What you're solving for 
+The length of each side of the equilateral triangles in radians. 
+What's given in the problem 
+
+• There are $6$ equilateral triangles on the surface of a unit sphere. 
+• The triangles encircle a common point. 
+• The sphere has a radius of $1$. 
+
+Helpful information 
+
+• The sum of the angles around a point is $2\pi$ radians. 
+• The angles of an equilateral triangle are all equal to $\frac{\pi}{3}$ radians. 
+• The area of a spherical triangle is given by $A = R^2 (\alpha + \beta + \gamma - \pi)$, where $R$ is the radius of the sphere, and $\alpha$, $\beta$, and $\gamma$ are the angles of the triangle in radians. 
+
+How to solve 
+Calculate the angle at the common point subtended by each triangle, then use spherical trigonometry to find the side length. 
+
+1. Step 1 Calculate the angle at the common point subtended by each triangle 
+	• The total angle around the common point is $2\pi$. 
+	• There are $6$ triangles, so each triangle subtends an angle of $\frac{2\pi}{6}$. 
+	• The angle is: 
+		• $\frac{2\pi}{6} = \frac{\pi}{3}$ 
+
+2. Step 2 Apply the spherical law of cosines 
+	• Let $a$ be the side length of the equilateral triangle. 
+	• The angles of the triangle are $\alpha = \beta = \gamma = \frac{\pi}{3}$. 
+	• The spherical law of cosines states: 
+		• $\cos(a) = \cos(b)\cos(c) + \sin(b)\sin(c)\cos(A)$ 
+
+	• In our case, $b = c = a$ and $A = \frac{\pi}{3}$. 
+	• So, $\cos(a) = \cos(a)\cos(a) + \sin(a)\sin(a)\cos(\frac{\pi}{3})$. 
+	• Since $\cos(\frac{\pi}{3}) = \frac{1}{2}$, we have: 
+		• $\cos(a) = \cos^2(a) + \sin^2(a) \cdot \frac{1}{2}$ 
+
+	• Using the identity $\sin^2(a) = 1 - \cos^2(a)$: 
+		• $\cos(a) = \cos^2(a) + \frac{1}{2}(1 - \cos^2(a))$ 
+		• $\cos(a) = \cos^2(a) + \frac{1}{2} - \frac{1}{2}\cos^2(a)$ 
+		• $\cos(a) = \frac{1}{2}\cos^2(a) + \frac{1}{2}$ 
+		• $2\cos(a) = \cos^2(a) + 1$ 
+		• $\cos^2(a) - 2\cos(a) + 1 = 0$ 
+		• $(\cos(a) - 1)^2 = 0$ 
+		• $\cos(a) = 1$ 
+		• $a = \arccos(1)$ 
+		• $a = 0$ 
+
+	• This result is incorrect, we should use the spherical law of cosines for angles instead. 
+	• $\cos(A) = -\cos(B)\cos(C) + \sin(B)\sin(C)\cos(a)$ 
+	• Since $A = B = C = \frac{\pi}{3}$, we have: 
+		• $\cos(\frac{\pi}{3}) = -\cos(\frac{\pi}{3})\cos(\frac{\pi}{3}) + \sin(\frac{\pi}{3})\sin(\frac{\pi}{3})\cos(a)$ 
+		• $\frac{1}{2} = -\frac{1}{2} \cdot \frac{1}{2} + \frac{\sqrt{3}}{2} \cdot \frac{\sqrt{3}}{2} \cos(a)$ 
+		• $\frac{1}{2} = -\frac{1}{4} + \frac{3}{4}\cos(a)$ 
+		• $\frac{3}{4} = \frac{3}{4}\cos(a)$ 
+		• $\cos(a) = 1$ 
+		• $a = \frac{\pi}{3}$ 
+
+Solution 
+The length of each side of the triangles is $\frac{\pi}{3}$ radians. 
+
+Generative AI is experimental.
+
