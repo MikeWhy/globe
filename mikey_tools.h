@@ -78,9 +78,9 @@ class RangeT
         return last - first;
     }
 
-    constexpr void* data() const
+    constexpr PtrT data() const
     {
-        return reinterpret_cast<void*>(first);
+        return first;
     }
 };
 
@@ -170,7 +170,7 @@ class ListT
         return end() - here;
     }
 
-    constexpr void * data() const
+    constexpr PtrT data() const
     {
         return buf.data();
     }
