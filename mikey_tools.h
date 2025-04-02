@@ -6,8 +6,15 @@
 #include <memory>
 #include <cstddef>
 
+// #include <span>
+
 namespace mhy
 {
+// #ifndef RANGET_USE_LEGACY
+#if 0
+template <typename T>
+using RangeT = std::span<T>;
+#else
 template <typename T>
 class RangeT
 {
@@ -58,9 +65,9 @@ class RangeT
         return *begin();
     }
 
-    PtrT operator[]( size_t idx )
+    T & operator[]( size_t idx )
     {
-        return begin() + idx;  // !! not range checked.
+        return *(begin() + idx);  // !! not range checked.
     }
 
     constexpr PtrT begin() const
@@ -83,6 +90,8 @@ class RangeT
         return first;
     }
 };
+#endif
+
 
 template <typename T>
 constexpr auto range( T * first, size_t count )
