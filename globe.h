@@ -37,12 +37,12 @@ namespace Globe
     constexpr auto  pi2 = pi * 2;
     //==============
     // clang-format off
-    template <class T, size_t N = 5>
-    std::enable_if_t<not std::numeric_limits<T>::is_integer, T>
-        constexpr Tiny = std::numeric_limits<T>::epsilon() * N;
+    template <std::floating_point T, size_t N = 5>
+        // std::enable_if_t<not std::numeric_limits<T>::is_integer, T>
+        constexpr T Tiny = std::numeric_limits<T>::epsilon() * N;
 
-    template <class T, size_t N = 5,
-        std::enable_if_t<not std::numeric_limits<T>::is_integer, bool> = true>
+    template <std::floating_point T, size_t N = 5>
+        // std::enable_if_t<not std::numeric_limits<T>::is_integer, bool> = true>
     constexpr bool less_than(T lhs, T rhs)
     {
         return Tiny<T, N> < (rhs - lhs);
@@ -115,7 +115,7 @@ namespace Globe
         }
         auto operator[](size_t idx) const
         {
-            return *list[first + idx];
+            return list[first + idx];
         }
         void* data() const
         {
@@ -293,6 +293,10 @@ namespace Globe
 
     class GlobeMesh
     {
+    public:
+        typedef SphericalCoord  vertex_type;
+        typedef Triangle        face_type;
+    private:
         std::unique_ptr<mhy::MappedBuffer>      gen_file;   // mesh wwas generated into this file
         std::unique_ptr<mhy::MemoryMappedFile>  load_file;  // pre-generated mesh was loaded from this.
 
