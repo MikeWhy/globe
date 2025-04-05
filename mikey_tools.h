@@ -5,8 +5,7 @@
 #include <stdexcept>
 #include <memory>
 #include <cstddef>
-
-// #include <span>
+#include <span>
 
 namespace mhy
 {
@@ -247,4 +246,31 @@ class ListT
     }
 };
 
+// commatize thousands
+template <unsigned char group = 3>
+struct comma_facet : public std::numpunct<char>
+{
+    char do_thousands_sep() const override
+    { return ',';
+    }
+
+    std::string do_grouping() const override
+    { return std::string( 1, group );
+    }
+};
+
+template <unsigned char N>
+std::ostream & operator<<( std::ostream & os,  const comma_facet<N> & )
+{
+    os.imbue( std::locale( os.getloc(), new comma_facet<N>() ) );
+    return os;
+}
+
+template <typename T>
+auto make_span( T * first, size_t count )
+{
+    return std::span<T>( first, count );
+}
+
 }  // namespace mhy
+using commatize = mhy::comma_facet<>;
